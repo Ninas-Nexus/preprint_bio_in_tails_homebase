@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Tails · Preprint Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08060d; --bg-deep: #050409; --panel: #130f1e; --panel-2: #1b1529;
+    --line: #2e2545; --text: #ece7f5; --text-dim: #8b81a8;
+
+    /* neon lilac -> neon green */
+    --lilac-pale: #e0aaff;
+    --lilac: #c77dff;
+    --violet: #9d4edd;
+    --deep: #7b2cbf;
+    --green: #39ff14;
+    --green-soft: #9dff6b;
+    --mint: #5ef2b0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { overflow-x: hidden; }
+  body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; position: relative; padding: 2.5rem 2rem 4rem;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: linear-gradient(rgba(199, 125, 255, 0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(57, 255, 20, 0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 82%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 82%);
+  }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(circle at 12% 15%, rgba(199, 125, 255, 0.12) 0%, transparent 38%),
+                radial-gradient(circle at 88% 78%, rgba(57, 255, 20, 0.09) 0%, transparent 36%),
+                radial-gradient(circle at 50% 45%, rgba(123, 44, 191, 0.08) 0%, transparent 55%);
+  }
+  .container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
+  a { text-decoration: none; color: inherit; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+
+  /* ===== HEADER ===== */
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1.5rem; padding-bottom: 1.5rem; margin-bottom: 2rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 1.25rem; }
+  .logo { flex-shrink: 0; filter: drop-shadow(0 0 12px rgba(199, 125, 255, 0.55)); animation: logo-pulse 4s ease-in-out infinite; }
+  @keyframes logo-pulse {
+    0%, 100% { filter: drop-shadow(0 0 12px rgba(199, 125, 255, 0.55)); }
+    50% { filter: drop-shadow(0 0 22px rgba(57, 255, 20, 0.6)); }
+  }
+  .masthead {
+    font-family: 'Major Mono Display', monospace;
+    font-size: clamp(1.7rem, 4.2vw, 3.1rem);
+    line-height: 0.95; letter-spacing: -0.02em;
+    background: linear-gradient(120deg, var(--lilac-pale) 0%, var(--lilac) 28%, var(--violet) 52%, var(--green-soft) 82%, var(--green) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    filter: drop-shadow(0 0 16px rgba(199, 125, 255, 0.45));
+  }
+  .brand .sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.5rem; max-width: 42ch; line-height: 1.45; }
+  .meta { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.18em; text-align: right; line-height: 1.8; color: var(--text-dim); }
+  .meta .date { color: var(--green); font-weight: 700; }
+  .meta .pulse { display: inline-block; width: 6px; height: 6px; background: var(--lilac); border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px var(--lilac); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+  .meta a:hover { color: var(--lilac); }
+
+  /* ===== HERO COUNTDOWN ===== */
+  .hero {
+    display: grid; grid-template-columns: minmax(210px, 0.65fr) 1.6fr; gap: 1.5rem;
+    align-items: stretch; margin-bottom: 2.5rem;
+  }
+  .clock {
+    position: relative; overflow: hidden;
+    background: radial-gradient(circle at 75% 15%, rgba(57, 255, 20, 0.12) 0%, transparent 58%), var(--panel);
+    border: 1px solid var(--line); padding: 1.35rem 1.4rem 1.4rem;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .clock::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--lilac), var(--green)); box-shadow: 0 0 18px rgba(199,125,255,0.8); }
+  .clock .tag { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--lilac); }
+  .clock .days {
+    font-family: 'Major Mono Display', monospace; font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 1;
+    margin: 0.45rem 0 0; color: var(--green); text-shadow: 0 0 22px rgba(57, 255, 20, 0.5);
+  }
+
+  /* ===== BRAG PANEL ===== */
+  .brag { position: relative; overflow: hidden; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; }
+  .brag::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, var(--green), var(--lilac)); box-shadow: 0 0 18px rgba(57,255,20,0.7); }
+  .brag-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 1rem 1.35rem 0.4rem; }
+  .brag-top .tag { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--green); }
+  .brag-refresh { background: transparent; border: 1px solid var(--line); color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.14em; padding: 0.42rem 0.8rem; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
+  .brag-refresh:hover { color: var(--lilac); border-color: var(--lilac); }
+  .brag-main { display: flex; align-items: flex-end; gap: 1.4rem; flex-wrap: wrap; padding: 0 1.35rem 0.9rem; }
+  .brag-count { font-family: 'Major Mono Display', monospace; font-size: clamp(2.6rem, 6vw, 4rem); line-height: 1; color: var(--green); text-shadow: 0 0 24px rgba(57,255,20,0.5); }
+  .brag-of { font-size: 0.82rem; color: var(--text-dim); padding-bottom: 0.55rem; line-height: 1.5; }
+  .brag-of b { color: var(--lilac); font-weight: 600; }
+  .brag-bar { height: 6px; background: var(--bg-deep); border: 1px solid var(--line); margin: 0 1.35rem; position: relative; }
+  .brag-bar span { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--lilac), var(--green)); box-shadow: 0 0 12px rgba(57,255,20,0.5); transition: width 0.6s ease; }
+  .brag-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.75rem; padding: 0.9rem 1.35rem 1.1rem; }
+  .brag-chip { border-left: 2px solid var(--chip, var(--line)); padding-left: 0.6rem; }
+  .brag-chip .n { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 700; color: var(--chip, var(--text)); }
+  .brag-chip .l { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.05em; }
+  .brag-chip.done { --chip: var(--green); }
+  .brag-chip.live { --chip: var(--lilac); }
+  .brag-chip.queue { --chip: var(--text-dim); }
+  .brag-chip.void { --chip: var(--violet); }
+  .brag-note { font-size: 0.72rem; color: var(--text-dim); padding: 0 1.35rem 1.1rem; line-height: 1.5; }
+  .brag-note a { color: var(--lilac); text-decoration: underline; }
+  .brag-figs { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0 1.35rem 1.2rem; }
+  .fig-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em; padding: 0.35rem 0.6rem; border: 1px solid var(--line); color: var(--text-dim); }
+  .fig-chip b { color: var(--green); font-weight: 700; }
+
+  /* ===== LOCK SCREEN ===== */
+  body.locked { overflow: hidden; }
+  body.locked .container { display: none; }
+  .lock-overlay {
+    position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center;
+    padding: 2rem 1.5rem; background: radial-gradient(circle at 20% 20%, rgba(199,125,255,0.14) 0%, transparent 45%),
+      radial-gradient(circle at 80% 80%, rgba(57,255,20,0.12) 0%, transparent 45%), var(--bg-deep);
+  }
+  .lock-overlay.hidden { display: none; }
+  .scanlines { position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(57,255,20,0.035) 2px, rgba(57,255,20,0.035) 4px); }
+  .lock-inner { position: relative; z-index: 2; text-align: center; max-width: 460px; width: 100%; }
+  .lock-logo { width: 104px; height: 104px; margin: 0 auto 1.4rem; filter: drop-shadow(0 0 18px rgba(199,125,255,0.7)); animation: lock-logo-pulse 2.5s ease-in-out infinite; }
+  @keyframes lock-logo-pulse {
+    0%, 100% { filter: drop-shadow(0 0 18px rgba(199,125,255,0.7)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 28px rgba(57,255,20,0.75)); transform: scale(1.05); }
+  }
+  .lock-title {
+    font-family: 'Major Mono Display', monospace; font-size: clamp(1.5rem, 4vw, 2.2rem); line-height: 1; letter-spacing: -0.02em;
+    background: linear-gradient(120deg, var(--lilac-pale) 0%, var(--lilac) 30%, var(--violet) 58%, var(--green) 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+    margin-bottom: 0.45rem; filter: drop-shadow(0 0 14px rgba(199,125,255,0.4));
+  }
+  .lock-status { font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--lilac); margin-bottom: 1.9rem; text-shadow: 0 0 10px var(--lilac); }
+  .lock-status .blip { display: inline-block; width: 6px; height: 6px; background: var(--green); border-radius: 50%; margin-right: 0.45rem; box-shadow: 0 0 8px var(--green); animation: pulse 1s infinite; vertical-align: middle; }
+  .lock-prompt { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--green); text-shadow: 0 0 8px rgba(57,255,20,0.45); margin-bottom: 0.85rem; text-align: left; letter-spacing: 0.05em; }
+  .lock-prompt::before { content: '> '; color: var(--lilac); }
+  .lock-prompt .caret { display: inline-block; width: 8px; background: var(--green); animation: caret-blink 1s steps(2) infinite; margin-left: 2px; }
+  .lock-prompt .caret::before { content: '_'; visibility: hidden; }
+  @keyframes caret-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+  .lock-row { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
+  .lock-input {
+    flex: 1; background: rgba(0,0,0,0.5); border: 1px solid var(--lilac); color: var(--text);
+    font-family: 'JetBrains Mono', monospace; font-size: 1rem; letter-spacing: 0.15em; padding: 0.85rem 1rem; outline: none;
+    box-shadow: inset 0 0 12px rgba(199,125,255,0.15), 0 0 12px rgba(199,125,255,0.25); transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .lock-input:focus { border-color: var(--green); box-shadow: inset 0 0 12px rgba(57,255,20,0.2), 0 0 18px rgba(57,255,20,0.4); }
+  .lock-input::placeholder { color: var(--text-dim); letter-spacing: 0.15em; }
+  .lock-submit { background: transparent; border: 1px solid var(--green); color: var(--green); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.18em; font-weight: 700; padding: 0 1.2rem; cursor: pointer; transition: background 0.2s, color 0.2s, box-shadow 0.2s; }
+  .lock-submit:hover { background: var(--green); color: var(--bg-deep); box-shadow: 0 0 18px var(--green); }
+  .lock-error-msg { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: #ff5c8a; opacity: 0; transition: opacity 0.2s; min-height: 1.1rem; }
+  .lock-overlay.error .lock-error-msg { opacity: 1; }
+  .lock-overlay.error .lock-inner { animation: shake 0.4s ease-in-out; }
+  .lock-overlay.error .lock-input { border-color: #ff5c8a; box-shadow: 0 0 24px rgba(255,92,138,0.6); }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-12px); }
+    40% { transform: translateX(12px); }
+    60% { transform: translateX(-8px); }
+    80% { transform: translateX(8px); }
+  }
+  .lock-footer { margin-top: 2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-dim); opacity: 0.6; }
+  .lock-footer .v { color: var(--green); }
+
+  /* ===== HEART CONFETTI ===== */
+  #confetti-fx { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 500; }
+  .confetti-piece { position: absolute; top: 0; will-change: transform; }
+  .confetti-drift { animation-name: confetti-drift; animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-direction: alternate; }
+  .confetti-tumble { animation-name: confetti-tumble; animation-timing-function: linear; animation-iteration-count: infinite; }
+  @keyframes confetti-fall { 0% { transform: translateY(-14vh); } 100% { transform: translateY(116vh); opacity: 0.15; } }
+  @keyframes confetti-drift { 0% { transform: translateX(-14px); } 100% { transform: translateX(14px); } }
+  @keyframes confetti-tumble { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* ===== SECTIONS ===== */
+  .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.1rem; }
+  .section-header h3 { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--section-color, var(--lilac)); font-weight: 700; text-shadow: 0 0 10px var(--section-color, var(--lilac)); }
+  .section-header .line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--section-color, var(--lilac)), transparent); opacity: 0.45; }
+
+  .split { display: grid; grid-template-columns: 1fr 2px 1fr 2px 1fr; gap: 1.5rem; margin-bottom: 3rem; }
+  .split-divider {
+    width: 2px; position: relative;
+    background: linear-gradient(180deg, transparent 0%, var(--lilac-pale) 15%, var(--lilac) 35%, var(--violet) 55%, var(--green-soft) 80%, transparent 100%);
+    box-shadow: 0 0 12px rgba(157, 78, 221, 0.5);
+  }
+  .split-divider::before, .split-divider::after { content: ''; position: absolute; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; border-radius: 50%; }
+  .split-divider::before { top: 8%; background: var(--lilac); box-shadow: 0 0 12px var(--lilac); }
+  .split-divider::after { bottom: 8%; background: var(--green); box-shadow: 0 0 12px var(--green); }
+
+  .stack { display: flex; flex-direction: column; gap: 0.85rem; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); padding: 1.05rem 1.2rem;
+    position: relative; overflow: hidden; display: flex; flex-direction: column;
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), border-color 0.25s, box-shadow 0.25s;
+  }
+  .card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 55%, var(--glow, var(--lilac)) 100%); opacity: 0.07; pointer-events: none; transition: opacity 0.25s; }
+  .card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--glow, var(--lilac)); box-shadow: 0 0 12px var(--glow, var(--lilac)); }
+  .card:hover { transform: translateX(4px); border-color: var(--glow, var(--lilac)); box-shadow: 0 0 28px -6px var(--glow, var(--lilac)); }
+  .card:hover::before { opacity: 0.17; }
+  .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.3rem; }
+  .card .num { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--glow, var(--lilac)); }
+  .card .arrow { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text-dim); transition: color 0.2s, transform 0.2s; }
+  .card:hover .arrow { color: var(--glow, var(--lilac)); transform: translateX(3px); }
+  .card h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1.28rem; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+  .card .subtitle { font-size: 0.76rem; color: var(--text-dim); line-height: 1.45; }
+
+  .card.hero-card { padding: 1.4rem 1.35rem; background: radial-gradient(circle at 85% 40%, rgba(57,255,20,0.14) 0%, transparent 62%), var(--panel); --glow: var(--green); }
+  .card.hero-card::after { height: 3px; box-shadow: 0 0 18px var(--green), 0 0 40px rgba(57,255,20,0.4); }
+  .card.hero-card h2 { font-family: 'Major Mono Display', monospace; font-weight: 400; font-size: 1.6rem; }
+  .card.hero-card .cta { margin-top: 0.9rem; align-self: flex-start; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--green); padding: 0.6rem 1.1rem; border: 1px solid var(--green); transition: background 0.2s, color 0.2s, box-shadow 0.2s; }
+  .card.hero-card:hover .cta { background: var(--green); color: var(--bg); box-shadow: 0 0 20px var(--green); }
+
+  .card.lilac { --glow: var(--lilac); }
+  .card.pale { --glow: var(--lilac-pale); }
+  .card.violet { --glow: var(--violet); }
+  .card.green { --glow: var(--green); }
+  .card.mint { --glow: var(--mint); }
+  .card.soft { --glow: var(--green-soft); }
+
+  /* ===== CRITICAL PATH ===== */
+  .path { background: var(--panel); border: 1px solid var(--line); position: relative; overflow: hidden; margin-bottom: 2.5rem; }
+  .path::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--lilac-pale), var(--lilac), var(--violet), var(--green-soft), var(--green)); box-shadow: 0 0 15px rgba(157,78,221,0.6); }
+  .path-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 1.1rem 1.35rem; border-bottom: 1px solid var(--line); }
+  .path-head h3 { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--lilac); text-shadow: 0 0 10px rgba(199,125,255,0.6); }
+  .path-head .note { font-size: 0.78rem; color: var(--text-dim); font-style: italic; }
+  .row { display: grid; grid-template-columns: 2.2rem 1fr auto; gap: 1rem; align-items: center; padding: 0.9rem 1.35rem; border-bottom: 1px solid rgba(46, 37, 69, 0.6); }
+  .row:last-child { border-bottom: none; }
+  .row .idx { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text-dim); }
+  .row .what { font-size: 0.92rem; line-height: 1.35; }
+  .row .what small { display: block; color: var(--text-dim); font-size: 0.74rem; margin-top: 0.2rem; }
+  .pill { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.35rem 0.65rem; border: 1px solid; white-space: nowrap; }
+  .pill.done { color: var(--green); border-color: var(--green); box-shadow: 0 0 12px -4px var(--green); }
+  .pill.live { color: var(--lilac); border-color: var(--lilac); box-shadow: 0 0 12px -4px var(--lilac); }
+  .pill.block { color: #ff6bd6; border-color: #ff6bd6; box-shadow: 0 0 12px -4px #ff6bd6; }
+  .pill.queue { color: var(--text-dim); border-color: var(--line); }
+
+  /* ===== GEMINI VAULT ===== */
+  .vault-toggle {
+    width: 100%; background: var(--panel); border: 1px solid var(--line); color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.2em; font-weight: 700; padding: 0.95rem 1.25rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden;
+    transition: color 0.25s, border-color 0.25s;
+  }
+  .vault-toggle::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--lilac), var(--green)); box-shadow: 0 0 12px rgba(199,125,255,0.7); opacity: 0.6; transition: opacity 0.25s; }
+  .vault-toggle:hover { color: var(--lilac); border-color: var(--lilac); }
+  .vault-toggle:hover::after { opacity: 1; }
+  .vault-toggle .v-left { display: flex; align-items: center; gap: 0.6rem; }
+  .vault-toggle .spark { color: var(--green); font-size: 0.85rem; filter: drop-shadow(0 0 6px var(--green)); }
+  .vault-toggle .chevron { transition: transform 0.3s; font-size: 0.9rem; }
+  .vault-toggle.open .chevron { transform: rotate(180deg); }
+  .vault-body { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1); background: var(--panel); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+  .vault-body.open { max-height: min(78vh, 900px); overflow-y: auto; border-bottom: 1px solid var(--line); }
+  .vault-body::-webkit-scrollbar { width: 8px; }
+  .vault-body::-webkit-scrollbar-track { background: var(--bg-deep); }
+  .vault-body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+  .vault-body::-webkit-scrollbar-thumb:hover { background: var(--violet); box-shadow: 0 0 6px var(--violet); }
+  .vault-inner { padding: 1.25rem; }
+  .v-caption { font-family: 'Space Grotesk', sans-serif; font-style: italic; font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1rem; }
+  .v-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem; }
+  .v-group-label {
+    grid-column: 1 / -1; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--label-color, var(--text-dim));
+    font-weight: 600; padding: 0.5rem 0 0.15rem; display: flex; align-items: center; gap: 0.6rem;
+  }
+  .v-group-label:first-child { padding-top: 0; }
+  .v-group-label .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--label-color, var(--text-dim)); box-shadow: 0 0 6px var(--label-color, var(--text-dim)); }
+  .v-group-label .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--label-color, var(--text-dim)) 0%, transparent 100%); opacity: 0.35; }
+  .v-card { background: var(--bg-deep); border: 1px solid var(--line); padding: 1.05rem 1.15rem; color: var(--text); position: relative; overflow: hidden; display: flex; flex-direction: column; min-height: 92px; transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), border-color 0.25s, box-shadow 0.25s; }
+  .v-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--glow, var(--lilac)); box-shadow: 0 0 10px var(--glow, var(--lilac)); opacity: 0.75; }
+  .v-card:hover { transform: translateY(-3px); border-color: var(--glow, var(--lilac)); box-shadow: 0 0 25px -8px var(--glow, var(--lilac)); }
+  .v-card .v-kind { font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--glow, var(--lilac)); opacity: 0.9; margin-bottom: 0.45rem; }
+  .v-card h5 { font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 1.02rem; line-height: 1.15; letter-spacing: -0.01em; margin-bottom: auto; }
+  .v-card .arrow { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-dim); text-align: right; margin-top: 0.6rem; transition: color 0.2s, transform 0.2s; }
+  .v-card:hover .arrow { color: var(--glow, var(--lilac)); transform: translateX(3px); }
+  .v-card.lib { --glow: var(--lilac-pale); }
+  .v-card.intro { --glow: var(--lilac); }
+  .v-card.close { --glow: var(--violet); }
+  .v-card.f1 { --glow: var(--green); }
+  .v-card.f2 { --glow: var(--green-soft); }
+  .v-card.f3 { --glow: var(--mint); }
+  .v-card.f4 { --glow: var(--green); }
+  .v-card.f5 { --glow: var(--green-soft); }
+  .vault-wrap { margin-bottom: 2.5rem; }
+  @media (max-width: 900px) { .v-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .v-grid { grid-template-columns: 1fr; } }
+
+  footer { border-top: 1px solid var(--line); padding-top: 1.35rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); }
+  footer a { color: var(--green); }
+  footer a:hover { color: var(--lilac); }
+
+  @media (max-width: 1000px) {
+    .split { grid-template-columns: 1fr; }
+    .split-divider { display: none; }
+    .hero { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 620px) {
+    body { padding: 1.75rem 1.1rem 3rem; }
+    .meta { text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body class="locked">
+
+<!-- LOCK SCREEN -->
+<div class="lock-overlay" id="lock-overlay">
+  <div class="scanlines"></div>
+  <div class="lock-inner">
+    <svg class="lock-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="lockHeartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#e0aaff"/>
+          <stop offset="35%" stop-color="#c77dff"/>
+          <stop offset="70%" stop-color="#9d4edd"/>
+          <stop offset="100%" stop-color="#39ff14"/>
+        </linearGradient>
+        <radialGradient id="lockNodeGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+          <stop offset="50%" stop-color="#c77dff" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#39ff14" stop-opacity="0.6"/>
+        </radialGradient>
+        <filter id="lockGlow">
+          <feGaussianBlur stdDeviation="1.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <path d="M50 88 C 18 64, 8 42, 18 26 C 27 12, 42 14, 50 28 C 58 14, 73 12, 82 26 C 92 42, 82 64, 50 88 Z"
+            fill="none" stroke="url(#lockHeartGrad)" stroke-width="2.5" stroke-linejoin="round" filter="url(#lockGlow)"/>
+      <g stroke="url(#lockHeartGrad)" stroke-width="1" opacity="0.85" filter="url(#lockGlow)">
+        <line x1="28" y1="30" x2="72" y2="30"/>
+        <line x1="28" y1="30" x2="50" y2="50"/>
+        <line x1="72" y1="30" x2="50" y2="50"/>
+        <line x1="50" y1="50" x2="22" y2="52"/>
+        <line x1="50" y1="50" x2="78" y2="52"/>
+        <line x1="22" y1="52" x2="50" y2="78"/>
+        <line x1="78" y1="52" x2="50" y2="78"/>
+        <line x1="28" y1="30" x2="22" y2="52"/>
+        <line x1="72" y1="30" x2="78" y2="52"/>
+        <line x1="50" y1="50" x2="50" y2="78"/>
+      </g>
+      <g filter="url(#lockGlow)">
+        <circle cx="28" cy="30" r="3.5" fill="url(#lockNodeGrad)"/>
+        <circle cx="72" cy="30" r="3.5" fill="url(#lockNodeGrad)"/>
+        <circle cx="22" cy="52" r="3" fill="url(#lockNodeGrad)"/>
+        <circle cx="78" cy="52" r="3" fill="url(#lockNodeGrad)"/>
+        <circle cx="50" cy="50" r="4.5" fill="url(#lockNodeGrad)"/>
+        <circle cx="50" cy="78" r="3.5" fill="url(#lockNodeGrad)"/>
+      </g>
+    </svg>
+
+    <h1 class="lock-title">the<br>tails</h1>
+    <div class="lock-status"><span class="blip"></span>access restricted</div>
+
+    <div class="lock-prompt">enter credentials<span class="caret"></span></div>
+
+    <div class="lock-row">
+      <input type="password" class="lock-input" id="lock-input" placeholder="* * * * * * * * * *" autocomplete="off" autofocus>
+      <button class="lock-submit" id="lock-submit">enter &#8594;</button>
+    </div>
+    <div class="lock-error-msg" id="lock-error">// access denied &middot; retry</div>
+
+    <div class="lock-footer">preprint command &nbsp;&middot;&nbsp; <span class="v">v.2026</span></div>
+  </div>
+</div>
+
+<div id="confetti-fx" aria-hidden="true"></div>
+<div class="container">
+
+  <header>
+    <div class="brand">
+      <!-- Heart Network Logo (Nina's Nexus) -->
+      <svg class="logo" width="72" height="72" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#e0aaff"/>
+            <stop offset="35%" stop-color="#c77dff"/>
+            <stop offset="70%" stop-color="#9d4edd"/>
+            <stop offset="100%" stop-color="#39ff14"/>
+          </linearGradient>
+          <radialGradient id="nodeGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+            <stop offset="50%" stop-color="#c77dff" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#39ff14" stop-opacity="0.6"/>
+          </radialGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="1.2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <path d="M50 88 C 18 64, 8 42, 18 26 C 27 12, 42 14, 50 28 C 58 14, 73 12, 82 26 C 92 42, 82 64, 50 88 Z"
+              fill="none" stroke="url(#heartGrad)" stroke-width="2.5" stroke-linejoin="round" filter="url(#glow)"/>
+        <g stroke="url(#heartGrad)" stroke-width="1" opacity="0.85" filter="url(#glow)">
+          <line x1="28" y1="30" x2="72" y2="30"/>
+          <line x1="28" y1="30" x2="50" y2="50"/>
+          <line x1="72" y1="30" x2="50" y2="50"/>
+          <line x1="50" y1="50" x2="22" y2="52"/>
+          <line x1="50" y1="50" x2="78" y2="52"/>
+          <line x1="22" y1="52" x2="50" y2="78"/>
+          <line x1="78" y1="52" x2="50" y2="78"/>
+          <line x1="28" y1="30" x2="22" y2="52"/>
+          <line x1="72" y1="30" x2="78" y2="52"/>
+          <line x1="50" y1="50" x2="50" y2="78"/>
+          <line x1="28" y1="30" x2="50" y2="78" opacity="0.5"/>
+          <line x1="72" y1="30" x2="50" y2="78" opacity="0.5"/>
+        </g>
+        <g filter="url(#glow)">
+          <circle cx="28" cy="30" r="3.5" fill="url(#nodeGrad)"/>
+          <circle cx="72" cy="30" r="3.5" fill="url(#nodeGrad)"/>
+          <circle cx="22" cy="52" r="3" fill="url(#nodeGrad)"/>
+          <circle cx="78" cy="52" r="3" fill="url(#nodeGrad)"/>
+          <circle cx="50" cy="50" r="4.5" fill="url(#nodeGrad)"/>
+          <circle cx="50" cy="78" r="3.5" fill="url(#nodeGrad)"/>
+        </g>
+      </svg>
+      <div>
+        <h1 class="masthead">the<br>tails</h1>
+        <p class="sub">Skewness and Upregulation in scRNA-seq. Gilshteyn, N. &amp; Deeds, E. J. Preprint in preparation.</p>
+      </div>
+    </div>
+
+    <div class="meta">
+      <div class="date" id="today"></div>
+      <div><span class="pulse"></span>preprint command</div>
+      <div><a href="https://ninas-nexus.github.io/trackers/" target="_blank" rel="noopener">nina's nexus &#8599;</a></div>
+    </div>
+  </header>
+
+  <!-- HERO: countdown + brag -->
+  <div class="hero">
+    <div class="clock">
+      <div class="tag">days to bioRxiv target</div>
+      <div class="days" id="days">--</div>
+    </div>
+
+    <div class="brag">
+      <div class="brag-top">
+        <div class="tag">tasks completed &middot; research tracker</div>
+        <button class="brag-refresh" id="brag-refresh">Refresh</button>
+      </div>
+      <div class="brag-main">
+        <div class="brag-count" id="brag-count">--</div>
+        <div class="brag-of" id="brag-of">of <b>--</b> live tasks done</div>
+      </div>
+      <div class="brag-bar"><span id="brag-fill"></span></div>
+      <div class="brag-split" id="brag-split"></div>
+      <div class="brag-figs" id="brag-figs"></div>
+      <div class="brag-note" id="brag-note">Reading the tracker...</div>
+    </div>
+  </div>
+
+  <!-- SPLIT: ASSISTANTS | DOCS | DRIVES -->
+  <div class="split">
+
+    <div>
+      <div class="section-header" style="--section-color: var(--green);">
+        <h3>// Assistants</h3><div class="line"></div>
+      </div>
+      <div class="stack">
+        <a href="https://chatgpt.com/g/g-p-6a181f8beff08191b524cc2588a6e02b/project" target="_blank" rel="noopener" class="card hero-card">
+          <div class="card-top"><span class="num">daily driver</span><span class="arrow">open &#8599;</span></div>
+          <h2>my assistant</h2>
+          <div class="subtitle">The one that already knows the whole picture.</div>
+          <div class="cta">Launch &#8599;</div>
+        </a>
+        <a href="https://claude.ai/project/019ddc9e-03a1-7592-abd0-44b6870d3552" target="_blank" rel="noopener" class="card lilac">
+          <div class="card-top"><span class="num">claude &middot; drafting</span><span class="arrow">open &#8599;</span></div>
+          <h2>Claude Project</h2>
+          <div class="subtitle">Manuscript drafting, recaps, figure automation, decision log.</div>
+        </a>
+        <a href="https://chatgpt.com/g/g-p-6aa3838455a48191aecbec02ad07b009/project" target="_blank" rel="noopener" class="card soft">
+          <div class="card-top"><span class="num">chatgpt &middot; preprint</span><span class="arrow">open &#8599;</span></div>
+          <h2>ChatGPT Project</h2>
+          <div class="subtitle">Preprint workspace. Zotero metadata runs live here.</div>
+        </a>
+        <a href="https://www.perplexity.ai/projects/preprint-the-biology-is-in-the-LuHj_gY8QWKT2X8SKhLLLg" target="_blank" rel="noopener" class="card violet">
+          <div class="card-top"><span class="num">perplexity &middot; lit</span><span class="arrow">open &#8599;</span></div>
+          <h2>Perplexity Project</h2>
+          <div class="subtitle">Literature search, prior art, citation chasing.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="split-divider"></div>
+
+    <div>
+      <div class="section-header" style="--section-color: var(--lilac);">
+        <h3>// Plan &amp; Tracking</h3><div class="line"></div>
+      </div>
+      <div class="stack">
+        <a href="https://docs.google.com/document/u/1/d/1UEfXcPykFVirQyGPNmToII44Hfgir7XB-23pvnbu7Ys/edit?tab=t.0" target="_blank" rel="noopener" class="card pale">
+          <div class="card-top"><span class="num">doc &middot; the schedule</span><span class="arrow">open &#8599;</span></div>
+          <h2>Quarter Timeline</h2>
+          <div class="subtitle">What happens between now and the post date, week by week.</div>
+        </a>
+        <a href="https://docs.google.com/spreadsheets/d/1tXwSF3nhNkwn1gM4zdB-TKLjM2Uvd01kHfrC9p1fVqo/edit?gid=959831398#gid=959831398" target="_blank" rel="noopener" class="card mint">
+          <div class="card-top"><span class="num">sheet &middot; status 0-4</span><span class="arrow">open &#8599;</span></div>
+          <h2>Preprint Tracker</h2>
+          <div class="subtitle">Task status, owners, dates. Update it right after every meeting.</div>
+        </a>
+        <a href="https://escholarship.org/uc/item/8p46s4ck" target="_blank" rel="noopener" class="card violet">
+          <div class="card-top"><span class="num">source &middot; 2024</span><span class="arrow">open &#8599;</span></div>
+          <h2>M.S. Thesis</h2>
+          <div class="subtitle">The deposited version on eScholarship. The manuscript's base text.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="split-divider"></div>
+
+    <div>
+      <div class="section-header" style="--section-color: var(--green-soft);">
+        <h3>// Storage</h3><div class="line"></div>
+      </div>
+      <div class="stack">
+        <a href="https://drive.google.com/drive/folders/1M6pJ4JCKS0FEFRJWCKMLSa7aGolDpVQS" target="_blank" rel="noopener" class="card green">
+          <div class="card-top"><span class="num">drive &middot; lab-facing</span><span class="arrow">open &#8599;</span></div>
+          <h2>Shared Drive</h2>
+          <div class="subtitle">Everything Eric can see. Figures and drafts land here when they are ready.</div>
+        </a>
+        <a href="https://drive.google.com/drive/folders/1jwOViFhLeOv-9GFq1-unebNbmHJUGXRO" target="_blank" rel="noopener" class="card lilac">
+          <div class="card-top"><span class="num">drive &middot; mine</span><span class="arrow">open &#8599;</span></div>
+          <h2>Personal Drive</h2>
+          <div class="subtitle">Working files, raw output, anything not ready to be seen.</div>
+        </a>
+        <a href="https://www.biorxiv.org/submit-a-manuscript" target="_blank" rel="noopener" class="card soft">
+          <div class="card-top"><span class="num">venue &middot; destination</span><span class="arrow">open &#8599;</span></div>
+          <h2>bioRxiv Submission</h2>
+          <div class="subtitle">The finish line. Submission portal and format requirements.</div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- GEMINI VAULT -->
+  <div class="vault-wrap">
+    <div class="section-header" style="--section-color: var(--green);">
+      <h3>// Gemini Vault</h3><div class="line"></div>
+    </div>
+
+    <button class="vault-toggle open" id="vault-toggle" aria-expanded="true" aria-controls="vault-body">
+      <span class="v-left"><span class="spark">&#9670;</span> notebooks by manuscript section</span>
+      <span class="chevron">&#9662;</span>
+    </button>
+
+    <div class="vault-body open" id="vault-body">
+      <div class="vault-inner">
+        <div class="v-caption">one notebook per piece of the paper. open the one you are writing today.</div>
+        <div class="v-grid">
+
+          <div class="v-group-label" style="--label-color: var(--lilac-pale);">
+            <span class="dot"></span><span>library</span><span class="rule"></span>
+          </div>
+          <a href="https://notebook.google.com/notebook/d6434fb9-c9e2-44a5-b519-018225dfea8e" target="_blank" rel="noopener" class="v-card lib">
+            <div class="v-kind">notebook</div><h5>Relevant Papers</h5><div class="arrow">open &#8599;</div>
+          </a>
+
+          <div class="v-group-label" style="--label-color: var(--lilac);">
+            <span class="dot"></span><span>text</span><span class="rule"></span>
+          </div>
+          <a href="https://notebook.google.com/notebook/ba58808a-e1bc-418c-898e-a30f2c9e8b9a" target="_blank" rel="noopener" class="v-card intro">
+            <div class="v-kind">notebook</div><h5>Introduction</h5><div class="arrow">open &#8599;</div>
+          </a>
+          <a href="https://notebook.google.com/notebook/b37d7eea-e23a-45f4-9607-bca192046ba7" target="_blank" rel="noopener" class="v-card close">
+            <div class="v-kind">notebook</div><h5>Conclusion / Discussion</h5><div class="arrow">open &#8599;</div>
+          </a>
+
+          <div class="v-group-label" style="--label-color: var(--green);">
+            <span class="dot"></span><span>figures</span><span class="rule"></span>
+          </div>
+          <a href="https://notebook.google.com/notebook/cde53931-5a33-41ce-85b4-084ef85321d8" target="_blank" rel="noopener" class="v-card f1">
+            <div class="v-kind">notebook</div><h5>Figure 1</h5><div class="arrow">open &#8599;</div>
+          </a>
+          <a href="https://notebook.google.com/notebook/2e54b17f-c016-4ed9-8f3d-71afbc82d4e9" target="_blank" rel="noopener" class="v-card f2">
+            <div class="v-kind">notebook</div><h5>Figure 2</h5><div class="arrow">open &#8599;</div>
+          </a>
+          <a href="https://notebook.google.com/notebook/298161aa-a1e2-43a5-9e85-d9177c9f142e" target="_blank" rel="noopener" class="v-card f3">
+            <div class="v-kind">notebook</div><h5>Figure 3</h5><div class="arrow">open &#8599;</div>
+          </a>
+          <a href="https://notebook.google.com/notebook/360e6b0d-10d2-4a1a-8c3a-ae69dccdbf01" target="_blank" rel="noopener" class="v-card f4">
+            <div class="v-kind">notebook</div><h5>Figure 4</h5><div class="arrow">open &#8599;</div>
+          </a>
+          <a href="https://notebook.google.com/notebook/fa767b48-ef5f-49ea-82d5-06a01c07c223" target="_blank" rel="noopener" class="v-card f5">
+            <div class="v-kind">notebook</div><h5>Figure 5</h5><div class="arrow">open &#8599;</div>
+          </a>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRITICAL PATH -->
+  <div class="path">
+    <div class="path-head">
+      <h3>// Critical Path</h3>
+      <div class="note">If it is not on this list, it is not on the way to November.</div>
+    </div>
+
+    <div class="row">
+      <div class="idx">01</div>
+      <div class="what">Thesis deposited and citable<small>eScholarship item 8p46s4ck, 2024</small></div>
+      <div class="pill done">Done</div>
+    </div>
+    <div class="row">
+      <div class="idx">02</div>
+      <div class="what">Method validated across three platforms<small>10X, MERFISH, BDRhapsody</small></div>
+      <div class="pill done">Done</div>
+    </div>
+    <div class="row">
+      <div class="idx">03</div>
+      <div class="what">Figure set assembled<small>40 histograms converted to EPS, metadata CSV built, PDF preferred for submission</small></div>
+      <div class="pill live">In progress</div>
+    </div>
+    <div class="row">
+      <div class="idx">04</div>
+      <div class="what">Illustrator batch placement into the 4x6 grid<small>Blocked on hosting the template and CSV at public HTTPS URLs</small></div>
+      <div class="pill block">Blocked</div>
+    </div>
+    <div class="row">
+      <div class="idx">05</div>
+      <div class="what">Manuscript text converted from thesis to preprint format<small>Trim to preprint length, methods tightened, references in Zotero</small></div>
+      <div class="pill live">In progress</div>
+    </div>
+    <div class="row">
+      <div class="idx">06</div>
+      <div class="what">Submission metadata settled in writing<small>Author list, corresponding author, target venue, contribution statement</small></div>
+      <div class="pill queue">Open</div>
+    </div>
+    <div class="row">
+      <div class="idx">07</div>
+      <div class="what">Posted to bioRxiv<small>Target before 1 November 2026</small></div>
+      <div class="pill queue">Queued</div>
+    </div>
+  </div>
+
+  <footer>
+    <div>the biology is in the tails &middot; v.2026</div>
+    <div><a href="https://ninas-nexus.github.io/trackers/" target="_blank" rel="noopener">back to nexus &#8599;</a></div>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    // ---------- gate ----------
+    // The password is never stored in this file, only these digests of it.
+    var PW_SHA = '330ea8ffba30e7c6feaeb65dd8de332554167793b387b289bd8484f9025d04ff';
+    var PW_FALLBACK = 1140875531;
+    var unlocked = false;
+
+    function weakHash(str) {
+      var h = 5381;
+      for (var i = 0; i < str.length; i++) { h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; }
+      return h;
+    }
+    function checkPassword(value) {
+      if (window.crypto && window.crypto.subtle && window.TextEncoder) {
+        return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+          .then(function (buf) {
+            var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) {
+              return ('00' + b.toString(16)).slice(-2);
+            }).join('');
+            return hex === PW_SHA;
+          })
+          .catch(function () { return weakHash(value) === PW_FALLBACK; });
+      }
+      return Promise.resolve(weakHash(value) === PW_FALLBACK);
+    }
+
+    var overlay = document.getElementById('lock-overlay');
+    var input = document.getElementById('lock-input');
+    var submit = document.getElementById('lock-submit');
+
+    function unlock() {
+      unlocked = true;
+      overlay.classList.add('hidden');
+      document.body.classList.remove('locked');
+      heartConfetti();
+      loadBrag();
+    }
+    function deny() {
+      overlay.classList.add('error');
+      input.value = '';
+      input.focus();
+      setTimeout(function () { overlay.classList.remove('error'); }, 1600);
+    }
+    function attempt() {
+      var v = input.value;
+      if (!v) { input.focus(); return; }
+      checkPassword(v).then(function (ok) { ok ? unlock() : deny(); });
+    }
+    submit.addEventListener('click', attempt);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') attempt(); });
+    setTimeout(function () { input.focus(); }, 120);
+
+    // ---------- countdown ----------
+    var TARGET = new Date(2026, 10, 1);   // 1 Nov 2026
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var left = Math.round((TARGET - today) / 86400000);
+    document.getElementById('days').textContent = left >= 0 ? left : '+' + Math.abs(left);
+
+    var opts = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
+    document.getElementById('today').textContent = now.toLocaleDateString('en-US', opts);
+
+    // ---------- Gemini Vault toggle ----------
+    var vt = document.getElementById('vault-toggle');
+    var vb = document.getElementById('vault-body');
+    if (vt && vb) {
+      vt.addEventListener('click', function () {
+        var isOpen = vb.classList.toggle('open');
+        vt.classList.toggle('open', isOpen);
+        vt.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+    }
+
+    // ---------- heart confetti ----------
+    var CONFETTI_COLORS = ['#e0aaff', '#c77dff', '#9d4edd', '#39ff14', '#9dff6b', '#5ef2b0'];
+    function heartSvg(size, color) {
+      return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100" style="filter:drop-shadow(0 0 5px ' + color + ')">' +
+        '<path d="M50 88 C 18 64, 8 42, 18 26 C 27 12, 42 14, 50 28 C 58 14, 73 12, 82 26 C 92 42, 82 64, 50 88 Z" ' +
+        'fill="' + color + '" opacity="0.9"/></svg>';
+    }
+    function heartConfetti() {
+      var fx = document.getElementById('confetti-fx');
+      if (!fx) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      fx.innerHTML = '';
+      for (var i = 0; i < 70; i++) {
+        var leftPct = Math.random() * 100;
+        var size = 12 + Math.random() * 22;
+        var delay = Math.random() * 1.4;
+        var dur = 3.2 + Math.random() * 2.6;
+        var drift = 1.6 + Math.random() * 1.8;
+        var tumble = 0.9 + Math.random() * 1.4;
+        var color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        var outer = document.createElement('div');
+        outer.className = 'confetti-piece';
+        outer.style.cssText = 'left:' + leftPct + '%;animation:confetti-fall ' + dur + 's cubic-bezier(.35,0,.7,1) ' + delay + 's forwards';
+        outer.innerHTML =
+          '<div class="confetti-drift" style="animation-duration:' + drift + 's;animation-delay:' + delay + 's">' +
+            '<div class="confetti-tumble" style="animation-duration:' + tumble + 's;animation-delay:' + delay + 's">' +
+              heartSvg(size, color) +
+            '</div></div>';
+        fx.appendChild(outer);
+      }
+      setTimeout(function () { fx.innerHTML = ''; }, 6500);
+    }
+    window.addEventListener('pageshow', function (e) { if (e.persisted && unlocked) heartConfetti(); });
+
+    // ---------- brag: completed tasks from the research tracker ----------
+    var SHEET_ID = '1tXwSF3nhNkwn1gM4zdB-TKLjM2Uvd01kHfrC9p1fVqo';
+    var GID = '959831398';
+    var CSV_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + GID;
+    var SHEET_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/edit?gid=' + GID;
+
+    // last known snapshot, used when the live fetch is blocked
+    var SNAPSHOT = { done: 76, live: 5, queued: 25, voided: 9, active: 106, when: '10 Sept 2026' };
+
+    var countEl = document.getElementById('brag-count');
+    var ofEl = document.getElementById('brag-of');
+    var fillEl = document.getElementById('brag-fill');
+    var splitEl = document.getElementById('brag-split');
+    var figsEl = document.getElementById('brag-figs');
+    var noteEl = document.getElementById('brag-note');
+
+    function parseCSV(text) {
+      var rows = [], row = [], field = '', inQuotes = false;
+      for (var i = 0; i < text.length; i++) {
+        var ch = text[i], next = text[i + 1];
+        if (inQuotes) {
+          if (ch === '"' && next === '"') { field += '"'; i++; }
+          else if (ch === '"') { inQuotes = false; }
+          else { field += ch; }
+        } else {
+          if (ch === '"') inQuotes = true;
+          else if (ch === ',') { row.push(field); field = ''; }
+          else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+          else if (ch === '\r') { }
+          else field += ch;
+        }
+      }
+      if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+      return rows;
+    }
+
+    function classify(raw) {
+      var s = (raw || '').trim().toLowerCase();
+      if (!s) return 'queued';
+      if (s.indexOf('void') > -1 || s.indexOf('cancel') > -1) return 'void';
+      if (s === 'complete' || s === 'completed' || s === '100%' || s === 'done') return 'done';
+      if (/\d+\s*%/.test(s) || s.indexOf('progress') > -1 || s.indexOf('complee') > -1) return 'live';
+      return 'queued';
+    }
+
+    function render(stats, figs, live) {
+      var pct = stats.active > 0 ? Math.round((stats.done / stats.active) * 100) : 0;
+      countEl.textContent = stats.done;
+      ofEl.innerHTML = 'of <b>' + stats.active + '</b> live tasks done, ' + pct + '%';
+      fillEl.style.width = pct + '%';
+      splitEl.innerHTML =
+        '<div class="brag-chip done"><div class="n">' + stats.done + '</div><div class="l">complete</div></div>' +
+        '<div class="brag-chip live"><div class="n">' + stats.live + '</div><div class="l">in progress</div></div>' +
+        '<div class="brag-chip queue"><div class="n">' + stats.queued + '</div><div class="l">not started</div></div>' +
+        '<div class="brag-chip void"><div class="n">' + stats.voided + '</div><div class="l">cancelled</div></div>';
+
+      if (figs && figs.length) {
+        figsEl.innerHTML = figs.map(function (f) {
+          return '<div class="fig-chip">fig ' + f.name + ' <b>' + f.done + '/' + f.total + '</b></div>';
+        }).join('');
+      } else {
+        figsEl.innerHTML = '';
+      }
+
+      noteEl.innerHTML = live
+        ? 'Live from the tracker. <a href="' + SHEET_URL + '" target="_blank" rel="noopener">Open it</a>'
+        : 'Last known snapshot, ' + SNAPSHOT.when + '. The live read is blocked, so this is static. To make it live, set the tracker to "Anyone with the link can view" and open this page over http, not as a local file. <a href="' + SHEET_URL + '" target="_blank" rel="noopener">Open the tracker</a>';
+    }
+
+    function loadBrag() {
+      noteEl.textContent = 'Reading the tracker...';
+      fetch(CSV_URL + '&_=' + Date.now())
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (text) {
+          if (text.trim().charAt(0) === '<') throw new Error('not CSV');
+          var rows = parseCSV(text.trim());
+
+          // find the header row, then the columns we need
+          var hIdx = -1, pCol = -1, idCol = -1, figCol = -1;
+          for (var r = 0; r < Math.min(rows.length, 20); r++) {
+            var lower = rows[r].map(function (c) { return (c || '').trim().toLowerCase(); });
+            var p = lower.indexOf('progress');
+            if (p > -1) {
+              hIdx = r; pCol = p;
+              idCol = lower.indexOf('task id');
+              for (var c = 0; c < lower.length; c++) {
+                if (lower[c].indexOf('figure') > -1) { figCol = c; break; }
+              }
+              break;
+            }
+          }
+          if (hIdx === -1) throw new Error('no Progress column');
+
+          var stats = { done: 0, live: 0, queued: 0, voided: 0, active: 0 };
+          var figMap = {};
+          for (var i = hIdx + 1; i < rows.length; i++) {
+            var row = rows[i];
+            if (!row || !row.some(function (c) { return c && c.trim(); })) continue;
+            if (idCol > -1 && !(row[idCol] || '').trim()) continue;
+            var kind = classify(row[pCol]);
+            if (kind === 'void') { stats.voided++; continue; }
+            stats[kind]++;
+            stats.active++;
+            if (figCol > -1) {
+              var f = (row[figCol] || '').trim();
+              if (/^\d+$/.test(f)) {
+                if (!figMap[f]) figMap[f] = { name: f, done: 0, total: 0 };
+                figMap[f].total++;
+                if (kind === 'done') figMap[f].done++;
+              }
+            }
+          }
+          var figs = Object.keys(figMap).sort(function (a, b) { return a - b; }).map(function (k) { return figMap[k]; });
+          render(stats, figs, true);
+        })
+        .catch(function () {
+          render({ done: SNAPSHOT.done, live: SNAPSHOT.live, queued: SNAPSHOT.queued, voided: SNAPSHOT.voided, active: SNAPSHOT.active }, null, false);
+        });
+    }
+
+    document.getElementById('brag-refresh').addEventListener('click', function () {
+      loadBrag();
+      heartConfetti();
+    });
+  })();
+</script>
+</body>
+</html>
